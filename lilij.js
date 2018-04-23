@@ -1,8 +1,15 @@
-// 变量：x
-// 函数：(lambda (x) e)
-// 绑定：(let ([x e1]) e2)
-// 调用：(e1 e2)
-// 算术：(• e2 e2)
+// 原始操作符
+// (quote x) '
+// (atom x)
+// (eq x y)
+// (car x)
+// (cdr x)
+// (cons x y)
+// (cond (p1 e1) (p2 e2) ... (pn en))
+// 函数
+// ((lambda (p1 ... pn) e) a1 ... an)
+// (label f (lambda (p1 ... pn) e))
+
 
 let getRegToken = (reg, step) => {
     if (!reg) {
@@ -139,10 +146,12 @@ let match = (exp, reg) => {
 }
 
 let matchSymbol = (exp) => {
-    let res = {};
+    let res;
     let word = extractWord(exp, 0);
     if (!!word && word == exp) {
-        res.value = word;
+        res = {
+            value: word
+        };
     } else {
         res = null;
     }
@@ -219,7 +228,130 @@ let interp = (exp, env) => {
     }
 }
 
-let r2 = (exp) => {
+let car = (e) => {
+    return e[0];
+}
+
+let cdr = (e) => {
+    return e[]
+    let r;
+    if (r = match(exp, "(,a ,b)")) {
+        return "(" + b + ")";
+    } else {
+        return "()";
+    }
+}
+
+let caar = (exp) => {
+    return car(car(exp));
+}
+
+let cadr = (exp) => {
+    return car(cdr(exp));
+}
+
+let cdar = (exp) => {
+    return cdr(car(exp));
+}
+
+let cddr = (exp) => {
+    return cdr(cdr(exp));
+}
+
+let cadar = (exp) => {
+    return car(cdr(car(exp)));
+}
+
+let atom = (x) => {
+    if (matchSymbol(x) || x == "()") {
+        return "t";
+    } else {
+        return "()";
+    }
+}
+
+let eq = (x, y) => {
+    return x == y ? "t" : "()";
+}
+
+let cons = (a, list) => {
+    return "(" + a + ", " + list.substr(1);
+}
+
+let cond = () => {
+    if (arguments.length == 0) {
+        return "()";
+    } else {
+        if (arguments[0])
+    }
+}
+
+// 字母序列 或 表
+let interp = (exp, env) => {
+    let r;
+    // (quote x) '
+    // (atom x)
+    // (eq x y)
+    // (car x)
+    // (cdr x)
+    // (cons x y)
+    // (cond (p1 e1) (p2 e2) ... (pn en))
+    if (matchSymbol(exp)) {
+        let v = lookup(env, exp);
+        if (v !== undefined) {
+            return v;
+        } else {
+            throw ("symbol undefined: " + exp);
+        }
+    } else if (matchSymbol(car(exp))) {
+        let h = car(exp);
+        if (h == "quote") {
+            return cadr(exp);
+        } else if (h == "atom") {
+            return atom(interp(cadr(exp), env));
+        } else if (h == "eq") {
+            return eq(interp(cadr(exp), env), interp(caddr(exp), env));
+        } else if (h == "car") {
+            return car(interp(cadr(exp), env));
+        } else if (h == "cdr") {
+            return cdr(interp(cadr(exp), env))
+        } else if (h == "cons") {
+            return 
+        } else if (h == "cond") {
+        }
+    } else
+    if (r = match(exp, "(quote ,x)")) {
+        return r.x;
+    } else if (r = match(exp, "(atom ,x)")) {
+        let v = interp(r.x, env);
+        if (matchSymbol(v) || v == '()') {
+            return 't';
+        } else {
+            return '()';
+        }
+    } else if (r = match(exp, "(eq ,x ,y)")) {
+        let v1 = interp(r.x);
+        let v2 = interp(r.y);
+        return (v1 == v2);
+    } else if (r = match(exp, "(car ,x)")) {
+        let v = interp(r.x);
+        let r1 = match(v, "(,a ,b)");
+        return r1.a;
+    } else if (r = match(exp, "(cdr ,x)")) {
+        let v = interp(r.x);
+        let r1 = match(v, "(,a ,b)");
+        return "(" + r1.b + ")";
+    } else if (r = match(exp, "(cons ,x ,y)")) {
+        let v1 = interp(r.x);
+        let v2 = interp(r.y);
+        return "(" + v1 + " " + v2 + ")";
+    } else if (r = match(exp, "cond ,x")) {
+        // 如何匹配变长
+        car
+    }
+}
+
+let lilij = (exp) => {
     exp = exp.replace(/\s+/gi, " ").trim();
     return interp(exp, {})
 }
