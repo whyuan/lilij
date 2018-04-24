@@ -1,3 +1,8 @@
+// step
+// 1.解析为s表达式 @@@@@@@@@@@@@@@
+// 2.使用表达式来运算 @@@@@@@@@@@@
+// 字母序列 或 表
+
 // 原始操作符
 // (quote x) '
 // (atom x)
@@ -10,348 +15,171 @@
 // ((lambda (p1 ... pn) e) a1 ... an)
 // (label f (lambda (p1 ... pn) e))
 
-
-let getRegToken = (reg, step) => {
-    if (!reg) {
-        return null;
-    } else if (reg[step] == "(" || reg[step] == "[") {
-        return reg[step];
-    } else if (reg[step] == ",") {
-        return "," + extractWord(reg, step + 1);
-    } else {
-        let token;
-        reg.substr(step).replace(/([^\(\[,]+).*/, (a, b) => {
-            token = b;
-        });
-        if (!!token) {
-            return token;
-        }
-    }
-    return null;
-}
-
-let extractNormalWord = (exp, step) => {
-    let word;
-    if (!exp) return null;
-    exp.substr(step).replace(/(([a-zA-Z]|\d|_|\+|\-|\*|\/)+).*/, (a, b) => {
-        word = b;
-    });
-    return word ? word : null;
-}
-
-let extractWord = (exp, step) => {
-    let word;
-    if (!exp) return null;
-    exp.substr(step).replace(/([a-zA-Z]([a-zA-Z]|\d|_)*).*/, (a, b) => {
-        word = b;
-    });
-    return word ? word : null;
-}
-
-let extractBracket = (exp, step) => {
-    if (!!exp && (exp[step] == "(" || exp[step] == "[")) {
-        let stack = 1;
-        let leftBracket = exp[step];
-        let rightBracket = ")";
-        if (exp[step] == "[") {
-            rightBracket = "]";
-        }
-        for (let i = step + 1; i < exp.length; i++) {
-            if (exp[i] == rightBracket) {
-                stack--;
-            } else if (exp[i] == leftBracket) {
-                stack++;
-            }
-            if (stack == 0) {
-                return exp.substr(step + 1, i - step - 1);
-            }
-        }
-    }
-    return null;
-}
-
-let isBracketValid = (exp) => {
-    let stack = [];
-    for (let i = 0; i < exp.length; i++) {
-        if (exp[i] == "(" || exp[i] == "[") {
-            stack.push(exp[i]);
-        } else if (exp[i] == ")" || exp[i] == "]") {
-            if (exp[i] == ")" && stack[stack.length-1] == "(") {
-                stack.pop();
-            } else if (exp[i] == "]" && stack[stack.length-1] == "[") {
-                stack.pop();
-            } else {
-                return false;
-            }
-        }
-    }
-    if (stack.length == 0) {
-        return true;
-    }
-}
-
-let doMatch = (exp, reg) => {
-    if (exp === null || reg === null) return null;
-    let stepExp = 0;
-    let stepReg = 0;
-    let res = {};
-    while (stepExp < exp.length && stepReg < reg.length) {
-        let token = getRegToken(reg, stepReg);
-        if (token == null) return null;
-        if (token == "(" || token == "[") {
-            if (exp.substr(stepExp, 1) == token) {
-                let exp1 = extractBracket(exp, stepExp);
-                let reg1 = extractBracket(reg, stepReg);
-                let res1 = doMatch(exp1, reg1);
-                if (res1 == null) return null;
-                for (let key in res1) {
-                    res[key] = res1[key];
-                }
-                stepExp += exp1.length + 2;
-                stepReg += reg1.length + 2;
-            } else {
-                return null;
-            }
-        } else if (token[0] == ",") {
-            let word;
-            if (exp.substr(stepExp, 1) == "(" || exp.substr(stepExp, 1) == "[") {
-                let content = extractBracket(exp, stepExp);
-                if (content === null) {
-                    return null;
-                }
-                word = "(" + content + ")";
-            } else {
-                word = extractNormalWord(exp, stepExp);
-                if (!word) return null;
-            }
-            res[token.substr(1)] = word;
-            stepExp += word.length;
-            stepReg += token.length;
-        } else if (exp.substr(stepExp).indexOf(token) === 0) {
-            stepExp += token.length;
-            stepReg += token.length;
+let parseToTokens = (exp) => {
+    exp = exp.replace(/\s+/gi, " ").trim();
+    let p = 0;
+    let tokens = [];
+    while (p < exp.length) {
+        if (exp[p] == "(" || exp[p] == ")") {
+            tokens.push(exp[p]);
+            p += 1;
+        } else if (/\w/.test(exp[p])) {
+            let token = "";
+            exp.substr(p).replace(/(\w(\w|\d|_)*).*$/, (a, b) => {
+                token = b
+            });
+            tokens.push(token);
+            p += token.length;
         } else {
-            return null;
+            p += 1;
         }
     }
-    if (stepExp < exp.length || stepReg < reg.length) return null;
-    return res;
+    return tokens;
 }
 
-let match = (exp, reg) => {
-    if (isBracketValid(reg)) {
-        return doMatch(exp, reg);
-    }
-    return null;
-}
-
-let matchSymbol = (exp) => {
-    let res;
-    let word = extractWord(exp, 0);
-    if (!!word && word == exp) {
-        res = {
-            value: word
-        };
-    } else {
-        res = null;
-    }
-    return res;
-}
-
-let matchNumber = (exp) => {
-    let res = {};
-    let num = parseFloat(exp);
-    if (!!num) {
-        res.value = num;
-    } else {
-        res = null;
-    }
-    return res;
-}
-
-let extEnv = (env, key, value) => {
-    let res = {};
-    for (let key0 in env) {
-        res[key0] = env[key0];
-    }
-    res[key] = value
-    return res;
-}
-
-let lookup = (env, key) => {
-    return env[key];
-}
-
-let Closure = function(exp, env) {
-    this.exp = exp;
-    this.env = env;
-}
-
-let interp = (exp, env) => {
-    let r;
-    if (r = matchSymbol(exp)) {
-        let v = lookup(env, exp);
-        if (v !== undefined) {
-            return v;
-        } else {
-            throw ("symbol undefined: " + exp);
+let parse = (exp) => {
+    let tokens = parseToTokens(exp);
+    let stack = [[]];
+    try {
+        for (let i = 0; i < tokens.length; i++) {
+            if (tokens[i] == "(") {
+                stack.push([]);
+            } else if (tokens[i] == ")") {
+                let top = stack.pop();
+                stack[stack.length - 1].push(top);
+            } else {
+                stack[stack.length - 1].push(tokens[i]);
+            }
         }
-    } else if (r = matchNumber(exp)) {
-        return r.value;
-    } else if (r = match(exp, "(lambda (,x) ,e)")) {
-        return new Closure(exp, env);
-    } else if (r = match(exp, "(let ([,x ,e1]) ,e2)")) {
-        let env1 = extEnv(env, r.x, interp(r.e1, env));
-        return interp(r.e2, env1);
-    } else if (r = match(exp, "(,e1 ,e2)")) {
-        let v1 = interp(r.e1, env);
-        let v2 = interp(r.e2, env);
-        if (v1 instanceof Closure) {
-            let r1 = match(v1.exp, "(lambda (,x) ,e)");
-            let env1 = extEnv(v1.env, r1.x, v2);
-            return interp(r1.e, env1);
-        } else {
-            throw ("exp error");
-        }
-    } else if (r = match(exp, "(,op ,e1 ,e2)")) {
-        let v1 = interp(r.e1, env);
-        let v2 = interp(r.e2, env);
-        if (r.op == "+") {
-            return v1 + v2;
-        } else if (r.op == "-") {
-            return v1 - v2;
-        } else if (r.op == "*") {
-            return v1 * v2;
-        } else if (r.op == "/") {
-            return v1 / v2;
-        }
+        return stack[0][0];
+    } catch {
+        console.error("exp is not valid.");
     }
 }
 
-let car = (e) => {
-    return e[0];
-}
-
-let cdr = (e) => {
-    return e[]
-    let r;
-    if (r = match(exp, "(,a ,b)")) {
-        return "(" + b + ")";
-    } else {
-        return "()";
-    }
-}
-
-let caar = (exp) => {
-    return car(car(exp));
-}
-
-let cadr = (exp) => {
-    return car(cdr(exp));
-}
-
-let cdar = (exp) => {
-    return cdr(car(exp));
-}
-
-let cddr = (exp) => {
-    return cdr(cdr(exp));
-}
-
-let cadar = (exp) => {
-    return car(cdr(car(exp)));
+let quote = (x) => {
+    return x;
 }
 
 let atom = (x) => {
-    if (matchSymbol(x) || x == "()") {
+    if (typeof x == "string" || (x instanceof Array && x.length == 0)) {
         return "t";
     } else {
-        return "()";
+        return [];
     }
 }
 
 let eq = (x, y) => {
-    return x == y ? "t" : "()";
-}
-
-let cons = (a, list) => {
-    return "(" + a + ", " + list.substr(1);
-}
-
-let cond = () => {
-    if (arguments.length == 0) {
-        return "()";
+    if (typeof x == "string" && typeof y == "string" && x == y) {
+        return "t";
+    } else if (x instanceof Array && y instanceof Array) {
+        if (x.length == 0 && y.length == 0) {
+            return "t";
+        } else if (x.length != y.length) {
+            return [];
+        } else {
+            for (let i = 0; i < x.length; i++) {
+                if (eq(x[i], y[i]) != "t") {
+                    return [];
+                }
+            }
+            return "t";
+        }
     } else {
-        if (arguments[0])
+        return [];
     }
 }
 
-// 字母序列 或 表
-let interp = (exp, env) => {
-    let r;
-    // (quote x) '
-    // (atom x)
-    // (eq x y)
-    // (car x)
-    // (cdr x)
-    // (cons x y)
-    // (cond (p1 e1) (p2 e2) ... (pn en))
-    if (matchSymbol(exp)) {
-        let v = lookup(env, exp);
-        if (v !== undefined) {
-            return v;
-        } else {
-            throw ("symbol undefined: " + exp);
+let car = (x) => {
+    return x[0];
+}
+
+let cdr = (x) => {
+    return x.slice(1);
+}
+
+let cons = (x, list) => {
+    let list = list.slice(0);
+    return list.splice(0, 0, x);
+}
+
+let evcon = (pes, env) => {
+    for (let i = 0; i < pes.length; i++) {
+        if (interp(pes[i][0], env) == "t") {
+            return interp(pes[i][1], env);
         }
-    } else if (matchSymbol(car(exp))) {
-        let h = car(exp);
-        if (h == "quote") {
-            return cadr(exp);
-        } else if (h == "atom") {
-            return atom(interp(cadr(exp), env));
-        } else if (h == "eq") {
-            return eq(interp(cadr(exp), env), interp(caddr(exp), env));
-        } else if (h == "car") {
-            return car(interp(cadr(exp), env));
-        } else if (h == "cdr") {
-            return cdr(interp(cadr(exp), env))
-        } else if (h == "cons") {
-            return 
-        } else if (h == "cond") {
-        }
-    } else
-    if (r = match(exp, "(quote ,x)")) {
-        return r.x;
-    } else if (r = match(exp, "(atom ,x)")) {
-        let v = interp(r.x, env);
-        if (matchSymbol(v) || v == '()') {
-            return 't';
-        } else {
-            return '()';
-        }
-    } else if (r = match(exp, "(eq ,x ,y)")) {
-        let v1 = interp(r.x);
-        let v2 = interp(r.y);
-        return (v1 == v2);
-    } else if (r = match(exp, "(car ,x)")) {
-        let v = interp(r.x);
-        let r1 = match(v, "(,a ,b)");
-        return r1.a;
-    } else if (r = match(exp, "(cdr ,x)")) {
-        let v = interp(r.x);
-        let r1 = match(v, "(,a ,b)");
-        return "(" + r1.b + ")";
-    } else if (r = match(exp, "(cons ,x ,y)")) {
-        let v1 = interp(r.x);
-        let v2 = interp(r.y);
-        return "(" + v1 + " " + v2 + ")";
-    } else if (r = match(exp, "cond ,x")) {
-        // 如何匹配变长
-        car
     }
 }
+// (defun eval. (e a)
+//   (cond 
+//     ((atom e) (assoc. e a))
+//     ((atom (car e))
+//      (cond 
+//        ((eq (car e) 'quote) (cadr e))
+//        ((eq (car e) 'atom)  (atom   (eval. (cadr e) a)))
+//        ((eq (car e) 'eq)    (eq     (eval. (cadr e) a)
+//                                     (eval. (caddr e) a)))
+//        ((eq (car e) 'car)   (car    (eval. (cadr e) a)))
+//        ((eq (car e) 'cdr)   (cdr    (eval. (cadr e) a)))
+//        ((eq (car e) 'cons)  (cons   (eval. (cadr e) a)
+//                                     (eval. (caddr e) a)))
+//        ((eq (car e) 'cond)  (evcon. (cdr e) a))
+//        ('t (eval. (cons (assoc. (car e) a)
+//                         (cdr e))
+//                   a))))
+//     ((eq (caar e) 'label)
+//      (eval. (cons (caddar e) (cdr e))
+//             (cons (list (cadar e) (car e)) a)))
+//     ((eq (caar e) 'lambda)
+//      (eval. (caddar e)
+//             (append. (pair. (cadar e) (evlis. (cdr  e) a))
+//                      a)))))
+
+// (defun evcon. (c a)
+//   (cond ((eval. (caar c) a)
+//          (eval. (cadar c) a))
+//         ('t (evcon. (cdr c) a))))
+
+// (defun evlis. (m a)
+//   (cond ((null. m) '())
+//         ('t (cons (eval.  (car m) a)
+//                   (evlis. (cdr m) a)))))
+
+let interp = (exp, env) => {
+    if (atom(exp) == "t") {
+        return assoc(exp, env);
+    } else if (atom(car(exp)) == "t") {
+        if (eq(car(exp), "quote") == "t") {
+            return cadr(exp);
+        } else if (eq(car(exp), "atom") == "t") {
+            return atom(interp(cadr(exp), env));
+        } else if (eq(car(exp), "eq") == "t") {
+            return eq(interp(cadr(exp), env), interp(caddr(exp), env));
+        } else if (eq(car(exp), "car") == "t") {
+            return car(interp(cadr(exp), env));
+        } else if (eq(car(exp), "cdr") == "t") {
+            return cdr(interp(cadr(exp), env));
+        } else if (eq(car(exp), "cons") == "t") {
+            return cons(interp(cadr(exp), env), interp(caddr(exp), env));
+        } else if (eq(car(exp), "cond") == "t") {
+            return evcon(cdr(exp), env);
+        } else {
+            throw "error";
+        }
+    } else if (eq(caar(e), "label") == "t") {
+        // (label f (lambda (p1 ... pn) e))
+    } else if (eq(caar(e), "lambda") == "t") {
+        // ((lambda (p1 ... pn) e) a1 ... an)
+
+    }
+}
+// (eq x y)
+// (car x)
+// (cdr x)
+// (cons x y)
+// (cond (p1 e1) (p2 e2) ... (pn en))
 
 let lilij = (exp) => {
-    exp = exp.replace(/\s+/gi, " ").trim();
-    return interp(exp, {})
+    let exp1 = parse(exp);
+    return interp(exp1, {})
 }
