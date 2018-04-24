@@ -167,10 +167,9 @@ let interp = (exp, env) => {
             throw "error";
         }
     } else if (eq(caar(e), "label") == "t") {
-        // (label f (lambda (p1 ... pn) e))
+        // ((label f (lambda (p1 ... pn) e)) a1 ... an)
     } else if (eq(caar(e), "lambda") == "t") {
         // ((lambda (p1 ... pn) e) a1 ... an)
-
     }
 }
 // (eq x y)
