@@ -201,12 +201,14 @@ let interp = (exp, env) => {
         } else if (eq(car(exp), "begin") === "t") {
             return evbegin(cdr(exp), env);
         } else if (eq(car(exp), "lambda") === "t") {
+            // (lambda (p1 ... pn) e)
             return exp;
         } else {
             return interp(cons(assoc(car(exp), env), cdr(exp)), env);
         }
     } else if (eq(caar(exp), "lambda") === "t") {
         // ((lambda (p1 ... pn) e) a1 ... an)
+        // 这里的函数是动态视域，而文本视域
         return interp(caddar(exp), append(pair(cadar(exp), evlis(cdr(exp), env)), env));
     } else {
         throw "error";
