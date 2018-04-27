@@ -99,8 +99,9 @@ let cdr = (x) => {
 };
 
 let cons = (x, list) => {
-    let list = list.slice(0);
-    return list.splice(0, 0, x);
+    let list1 = list.slice(0);
+    list1.splice(0, 0, x);
+    return list1;
 };
 
 let evcon = (pes, env) => {
@@ -167,47 +168,17 @@ let pair = (l0, l1) => {
 let append = (env0, env1) => {
     let res = {};
     for (let key in env0) {
-        res[key] = env0[key];
+        if (env0.hasOwnProperty(key)) {
+            res[key] = env0[key];
+        }
     }
     for (let key in env1) {
-        res[key] = env1[key];
+        if (env1.hasOwnProperty(key)) {
+            res[key] = env1[key];
+        }
     }
     return res;
 };
-// (defun eval. (e a)
-//   (cond
-//     ((atom e) (assoc. e a))
-//     ((atom (car e))
-//      (cond
-//        ((eq (car e) 'quote) (cadr e))
-//        ((eq (car e) 'atom)  (atom   (eval. (cadr e) a)))
-//        ((eq (car e) 'eq)    (eq     (eval. (cadr e) a)
-//                                     (eval. (caddr e) a)))
-//        ((eq (car e) 'car)   (car    (eval. (cadr e) a)))
-//        ((eq (car e) 'cdr)   (cdr    (eval. (cadr e) a)))
-//        ((eq (car e) 'cons)  (cons   (eval. (cadr e) a)
-//                                     (eval. (caddr e) a)))
-//        ((eq (car e) 'cond)  (evcon. (cdr e) a))
-//        ('t (eval. (cons (assoc. (car e) a)
-//                         (cdr e))
-//                   a))))
-//     ((eq (caar e) 'label)
-//      (eval. (cons (caddar e) (cdr e))
-//             (cons (list (cadar e) (car e)) a)))
-//     ((eq (caar e) 'lambda)
-//      (eval. (caddar e)
-//             (append. (pair. (cadar e) (evlis. (cdr  e) a))
-//                      a)))))
-//
-// (defun evcon. (c a)
-//   (cond ((eval. (caar c) a)
-//          (eval. (cadar c) a))
-//         ('t (evcon. (cdr c) a))))
-//
-// (defun evlis. (m a)
-//   (cond ((null. m) '())
-//         ('t (cons (eval.  (car m) a)
-//                   (evlis. (cdr m) a)))))
 
 let interp = (exp, env) => {
     if (atom(exp) === "t") {
@@ -232,7 +203,7 @@ let interp = (exp, env) => {
         } else if (eq(car(exp), "lambda") === "t") {
             return exp;
         } else {
-            throw "error";
+            return interp(cons(assoc(car(exp), env), cdr(exp)), env);
         }
     } else if (eq(caar(exp), "lambda") === "t") {
         // ((lambda (p1 ... pn) e) a1 ... an)
@@ -241,11 +212,6 @@ let interp = (exp, env) => {
         throw "error";
     }
 };
-// (eq x y)
-// (car x)
-// (cdr x)
-// (cons x y)
-// (cond (p1 e1) (p2 e2) ... (pn en))
 
 let lilij = (exp) => {
     let exp1 = parse(exp);
@@ -253,4 +219,11 @@ let lilij = (exp) => {
 };
 
 console.log(lilij("(eq (quote abc) (quote abc))"));
+console.log(lilij("(atom (quote abc))"));
+console.log(lilij("(atom (quote (cons a (b))))"));
+console.log(lilij("(cons (quote a) (cons (quote b) (quote ())))"));
+console.log(lilij("(car (cons (quote a) (cons (quote b) (quote ()))))"));
+console.log(lilij("((lambda (x y) (eq x y)) (quote a) (quote b))"));
+console.log(lilij("((lambda (x y) (eq x y)) (quote a) (quote a))"));
+console.log(lilij("((lambda (x y) (eq x y)) (quote ()) (quote ()))"));
 
