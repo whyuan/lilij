@@ -16,57 +16,54 @@
 // (label f (lambda (p1 ... pn) e))
 
 let parseToTokens = (exp) => {
-    exp = exp.replace(/\s+/gi, " ").trim();
-    let p = 0;
-    let tokens = [];
-    while (p < exp.length) {
-        if (exp[p] === "(" || exp[p] === ")") {
-            tokens.push(exp[p]);
-            p += 1;
-        } else if (/\w/.test(exp[p])) {
-            let token = "";
-            exp.substr(p).replace(/(\w(\w|\d|_)*).*$/, (a, b) => {
-                token = b
-            });
-            tokens.push(token);
-            p += token.length;
-        } else {
-            p += 1;
+    let tokens = exp.replace(/'\(\)/gi, "(quote ())")
+        .replace(/'\(/gi, "(quote ")
+        .replace(/'(\w+)/gi, ($0, $1)=>"(quote "+$1+")")
+        .replace(/\s+/gi, ",")
+        .replace(/\(/gi, ",(,")
+        .replace(/\)/gi, ",),")
+        .replace(/,+/gi, ",")
+        .split(",");
+    let res = [];
+    for (let i in tokens) {
+        if (tokens[i]) {
+            res.push(tokens[i]);
         }
     }
-    return tokens;
+    return res;
+};
+
+let isAtomToken = (token) => {
+    return token && token !== "(" && token !== ")";
 };
 
 let parse = (exp) => {
     let tokens = parseToTokens(exp);
-    let stack = [[]];
-    try {
-        for (let i = 0; i < tokens.length; i++) {
-            if (tokens[i] === "(") {
-                stack.push([]);
-            } else if (tokens[i] === ")") {
-                let top = stack.pop();
-                stack[stack.length - 1].push(top);
-            } else {
-                stack[stack.length - 1].push(tokens[i]);
+    if (tokens.length > 0) {
+        let step = 0;
+        let f = () => {
+            if (tokens[step] === "(") {
+                let children = [];
+                step += 1;
+                while (tokens[step] !== ")") {
+                    children.push(f());
+                }
+                step += 1;
+                return children;
+            } else if (isAtomToken(tokens[step])) {
+                let s = tokens[step];
+                step += 1;
+                return s;
             }
-        }
-        return stack[0][0];
-    } catch(e) {
-        console.error("exp is not valid.");
-    }
-};
-
-let quote = (x) => {
-    return x;
-};
-
-let atom = (x) => {
-    if (typeof x === "string" || (x instanceof Array && x.length === 0)) {
-        return "t";
+        };
+        return f();
     } else {
         return [];
     }
+};
+
+let atom = (exp) => {
+    return (typeof exp === "string") ? "t" : [];
 };
 
 let eq = (x, y) => {
@@ -90,12 +87,39 @@ let eq = (x, y) => {
     }
 };
 
-let car = (x) => {
-    return x[0];
+let car = (exp) => {
+    if (exp === undefined) {
+        console.log("bbbb");
+    }
+    return exp[0];
 };
 
-let cdr = (x) => {
-    return x.slice(1);
+let cdr = (exp) => {
+    return exp.slice(1);
+};
+
+let caar = (exp) => {
+    return car(car(exp));
+};
+
+let cadr = (exp) => {
+    return car(cdr(exp));
+};
+
+let caddr = (exp) => {
+    return car(cdr(cdr(exp)));
+};
+
+let caddar = (exp) => {
+    return car(cdr(cdr(car(exp))));
+};
+
+let cadar = (exp) => {
+    return car(cdr(car(exp)));
+};
+
+let assoc = (exp, env) => {
+    return env[exp];
 };
 
 let cons = (x, list) => {
@@ -120,47 +144,14 @@ let evlis = (exps, env) => {
     return res;
 };
 
-let evbegin = (exps, env) => {
-    let exps = cdr(exp);
-    let res = [];
-    for (let i = 0; i < exps.length; i++) {
-        res = interp(exps, env);
-    }
-    return res;
-};
-
-let assoc = (exp, env) => {
-    if (env[exp] !== undefined) {
-        return env[exp];
-    } else {
-        throw "error";
-    }
-};
-
-let cadr = (exp) => {
-    return exp[1];
-};
-
-let caar = (exp) => {
-    return exp[0][0];
-};
-
-let cadar = (exp) => {
-    return exp[0][1];
-};
-
-let caddr = (exp) => {
-    return exp[2];
-};
-
-let caddar = (exp) => {
-    return exp[0][2]
-};
-
 let pair = (l0, l1) => {
     let res = {};
     for (let i = 0; i < l0.length; i++) {
-        res[l0[i]] = l1[i];
+        if (l1[i] !== undefined) {
+            res[l0[i]] = l1[i];
+        } else {
+            res[l0[i]] = l0[i];
+        }
     }
     return res;
 };
@@ -177,7 +168,18 @@ let append = (env0, env1) => {
             res[key] = env1[key];
         }
     }
+    // for (let key in res) {
+    //     if (res.hasOwnProperty(key)) {
+    //         if (eq(car(res[key]), "closure") === "t" && caddr(res[key]) === env0) {
+    //             res[key] = closure(cadr(res[key]), res);
+    //         }
+    //     }
+    // }
     return res;
+};
+
+let closure = (exp, env) => {
+    return ["closure", exp, env];
 };
 
 let interp = (exp, env) => {
@@ -198,34 +200,96 @@ let interp = (exp, env) => {
             return cons(interp(cadr(exp), env), interp(caddr(exp), env));
         } else if (eq(car(exp), "cond") === "t") {
             return evcon(cdr(exp), env);
-        } else if (eq(car(exp), "begin") === "t") {
-            return evbegin(cdr(exp), env);
-        } else if (eq(car(exp), "lambda") === "t") {
-            // (lambda (p1 ... pn) e)
-            return exp;
         } else {
             return interp(cons(assoc(car(exp), env), cdr(exp)), env);
         }
+    } else if (eq(caar(exp), "label") === "t") {
+        return interp(cons(caddar(exp), cdr(exp)), append(env, pair(cons(cadar(exp), []), cons(car(exp), []))));
     } else if (eq(caar(exp), "lambda") === "t") {
-        // ((lambda (p1 ... pn) e) a1 ... an)
-        // 这里的函数是动态视域，而文本视域
-        return interp(caddar(exp), append(pair(cadar(exp), evlis(cdr(exp), env)), env));
+        return interp(caddar(exp), append(env, pair(cadar(exp), evlis(cdr(exp), env))));
     } else {
-        throw "error";
+        console.error("aaaa");
     }
 };
+
+
+// let interp = (exp, env) => {
+//     if (atom(exp) === "t") {
+//         return assoc(exp, env);
+//         // } else if (atom(car(exp)) === "t") {
+//     } else if (eq(car(exp), "quote") === "t") {
+//         return cadr(exp);
+//     } else if (eq(car(exp), "atom") === "t") {
+//         return atom(interp(cadr(exp), env));
+//     } else if (eq(car(exp), "eq") === "t") {
+//         return eq(interp(cadr(exp), env), interp(caddr(exp), env));
+//     } else if (eq(car(exp), "car") === "t") {
+//         return car(interp(cadr(exp), env));
+//     } else if (eq(car(exp), "cdr") === "t") {
+//         return cdr(interp(cadr(exp), env));
+//     } else if (eq(car(exp), "cons") === "t") {
+//         return cons(interp(cadr(exp), env), interp(caddr(exp), env));
+//     } else if (eq(car(exp), "cond") === "t") {
+//         return evcon(cdr(exp), env);
+//     // } else if (eq(car(exp), "lambda") === "t") {
+//         // (lambda (p1 ... pn) e)
+//         // return closure(exp, env);
+//     // } else if (eq(car(exp), "label") === "t") {
+//     //     // (label f (lambda (p1 ... pn) e))
+//     //     let env1 = append(env, pair(cons(cadr(exp), []), cons([], [])));
+//     //     env1[cadr(exp)] = closure(caddr(exp), env1);
+//     //     return env1[cadr(exp)];
+//     // } else if (eq(car(exp), "label") === "t") {
+//     //     // (label f (lambda (p1 ... pn) e))
+//     //     return closure(caddr(exp), append(env, pair(cons(cadr(exp), []), cons(exp, []))));
+//     // } else if (eq(car(exp), "let") === "t") {
+//     //     // (label f (lambda (p1 ... pn) e))
+//     //     let v1 = interp(cadr(cadr(exp)), env);
+//     //     return interp(caddr(exp), append(env, pair(cons(car(cadr(exp)), []), cons(v1, []))));
+//     } else {
+//         let v1 = interp(car(exp), env);
+//         let v2 = interp(cadr(exp), env);
+//         if (eq(car(v1), "closure") === "t") {
+//             return interp(caddr(cadr(v1)), append(caddr(v1), pair(cadr(cadr(v1)), cons(v2, []))));
+//         } else {
+//             console.error("error");
+//         }
+//     }
+// };
 
 let lilij = (exp) => {
     let exp1 = parse(exp);
     return interp(exp1, {})
 };
 
-console.log(lilij("(eq (quote abc) (quote abc))"));
-console.log(lilij("(atom (quote abc))"));
-console.log(lilij("(atom (quote (cons a (b))))"));
-console.log(lilij("(cons (quote a) (cons (quote b) (quote ())))"));
-console.log(lilij("(car (cons (quote a) (cons (quote b) (quote ()))))"));
-console.log(lilij("((lambda (x y) (eq x y)) (quote a) (quote b))"));
-console.log(lilij("((lambda (x y) (eq x y)) (quote a) (quote a))"));
-console.log(lilij("((lambda (x y) (eq x y)) (quote ()) (quote ()))"));
+// let println = (exp) => {
+//     let res = "";
+//     let f = (exp) => {
+//         if (typeof exp === "string") {
+//             res += exp;
+//         } else {
+//             for (let i in exp) {
+//                 res "(" + f(exp[i]) + ")";
+//             }
+//
+//         }
+//     };
+//     f(exp)
+// };
+
+console.log(lilij("(eq 'abc 'abc)"));
+console.log(lilij("(atom 'abc)"));
+console.log(lilij("(atom '((cons a (b))))"));
+console.log(lilij("(cons 'a (cons 'b '()))"));
+console.log(lilij("(car (cons 'a (cons 'b '())))"));
+console.log(lilij("((lambda (x y) (eq x y)) 'a 'b)"));
+console.log(lilij("((lambda (x y) (eq x y)) 'a 'a)"));
+console.log(lilij("((lambda (x y) (eq x y)) '() '())"));
+console.log(lilij("((lambda (x y) (eq x y)) '() '())"));
+
+
+
+
+
+
 
