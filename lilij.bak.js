@@ -17,9 +17,8 @@
 
 let parseToTokens = (exp) => {
     let tokens = exp.replace(/'\(\)/gi, "(quote ())")
-        // .replace(/'\(/gi, "(quote ")
+        .replace(/'\(/gi, "(quote ")
         .replace(/'(\w+)/gi, ($0, $1)=>"(quote "+$1+")")
-        .replace(/;.*/g, "")
         .replace(/\s+/gi, ",")
         .replace(/\(/gi, ",(,")
         .replace(/\)/gi, ",),")
@@ -89,11 +88,21 @@ let eq = (x, y) => {
 };
 
 let car = (exp) => {
+    if (exp === undefined) {
+        console.log("bbbb");
+    }
     return exp[0];
 };
 
 let cdr = (exp) => {
+    if (exp === undefined) {
+        console.error("bbbbbbbbbbbbbbbbb");
+    }
     return exp.slice(1);
+};
+
+let caar = (exp) => {
+    return car(car(exp));
 };
 
 let cadr = (exp) => {
@@ -102,6 +111,18 @@ let cadr = (exp) => {
 
 let caddr = (exp) => {
     return car(cdr(cdr(exp)));
+};
+
+let caddar = (exp) => {
+    return car(cdr(cdr(car(exp))));
+};
+
+let cadddr = (exp) => {
+    return car(cdr(cdr(cdr(exp))));
+};
+
+let cadar = (exp) => {
+    return car(cdr(car(exp)));
 };
 
 let assoc = (exp, env) => {
@@ -122,6 +143,26 @@ let evcon = (pes, env) => {
     }
 };
 
+let evlis = (exps, env) => {
+    let res = [];
+    for (let i = 0; i < exps.length; i++) {
+        res.push(interp(exps[i], env));
+    }
+    return res;
+};
+
+// let pair = (l0, l1) => {
+//     let res = {};
+//     for (let i = 0; i < l0.length; i++) {
+//         if (l1[i] !== undefined) {
+//             res[l0[i]] = l1[i];
+//         } else {
+//             res[l0[i]] = l0[i];
+//         }
+//     }
+//     return res;
+// };
+
 let pair = (e0, e1) => {
     let res = {};
     res[e0] = e1;
@@ -140,12 +181,50 @@ let append = (env0, env1) => {
             res[key] = env1[key];
         }
     }
+    // for (let key in res) {
+    //     if (res.hasOwnProperty(key)) {
+    //         if (eq(car(res[key]), "closure") === "t" && caddr(res[key]) === env0) {
+    //             res[key] = closure(cadr(res[key]), res);
+    //         }
+    //     }
+    // }
     return res;
 };
 
 let closure = (exp, env) => {
     return ["closure", exp, env];
 };
+
+// let interp = (exp, env) => {
+//     if (atom(exp) === "t") {
+//         return assoc(exp, env);
+//     } else if (atom(car(exp)) === "t") {
+//         if (eq(car(exp), "quote") === "t") {
+//             return cadr(exp);
+//         } else if (eq(car(exp), "atom") === "t") {
+//             return atom(interp(cadr(exp), env));
+//         } else if (eq(car(exp), "eq") === "t") {
+//             return eq(interp(cadr(exp), env), interp(caddr(exp), env));
+//         } else if (eq(car(exp), "car") === "t") {
+//             return car(interp(cadr(exp), env));
+//         } else if (eq(car(exp), "cdr") === "t") {
+//             return cdr(interp(cadr(exp), env));
+//         } else if (eq(car(exp), "cons") === "t") {
+//             return cons(interp(cadr(exp), env), interp(caddr(exp), env));
+//         } else if (eq(car(exp), "cond") === "t") {
+//             return evcon(cdr(exp), env);
+//         } else {
+//             return interp(cons(assoc(car(exp), env), cdr(exp)), env);
+//         }
+//     } else if (eq(caar(exp), "label") === "t") {
+//         return interp(cons(caddar(exp), cdr(exp)), append(env, pair(cons(cadar(exp), []), cons(car(exp), []))));
+//     } else if (eq(caar(exp), "lambda") === "t") {
+//         return interp(caddar(exp), append(env, pair(cadar(exp), evlis(cdr(exp), env))));
+//     } else {
+//         console.error("aaaa");
+//     }
+// };
+
 
 let interp = (exp, env) => {
     if (atom(exp) === "t") {
@@ -189,9 +268,23 @@ let interp = (exp, env) => {
 
 let lilij = (exp) => {
     let exp1 = parse(exp);
-    let res = interp(exp1, {});
-    return JSON.stringify(res).replace(/\"/gi, "").replace(/\[/gi, "(").replace(/\]/gi, ")").replace(/,/gi, " ");
+    return interp(exp1, {})
 };
+
+// let println = (exp) => {
+//     let res = "";
+//     let f = (exp) => {
+//         if (typeof exp === "string") {
+//             res += exp;
+//         } else {
+//             for (let i in exp) {
+//                 res "(" + f(exp[i]) + ")";
+//             }
+//
+//         }
+//     };
+//     f(exp)
+// };
 
 console.log(lilij("(eq 'abc 'abc)"));
 console.log(lilij("(atom 'abc)"));
@@ -207,12 +300,12 @@ console.log(lilij(`
   cond
   ((eq m '()) n)
   ('t ((sum (cdr m)) (cons (car m) n)))
-)))) (quote (1 1 1))) (quote (1 1)))
+)))) (cons '1 (cons '1 (cons '1 '())))) (cons '1 (cons '1 '())))
 `));
-console.log(lilij(`
-(((label map (lambda (f) (lambda (list) (
-  cond
-  ((eq list '()) '())
-  ('t (cons (f (car list)) ((map f) (cdr list))))
-)))) (lambda (c) (cons c (cons c (cons c '()))))) (quote (1 1)))
-`));
+
+
+
+
+
+
+
