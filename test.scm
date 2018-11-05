@@ -55,6 +55,68 @@
 ))) (cons '1 (cons '1 '())) (cons '1 (cons '1 '())))
 
 
+(label )
+
+((label add3 (lambda (n1)
+  (((label sum (lambda (m) (lambda (n) (
+    cond
+    ((eq m '()) n1)
+    ('t ((sum (cdr m)) (cons (car m) n)))
+  )))) (cons '1 (cons '1 (cons '1 '())))) n1)
+)) (cons '1 (cons '1 '())))
+
+(((label add3 (lambda (f) (lambda (n) (f n))))
+  ((label sum (lambda (m) (lambda (n) (
+                                        cond
+                                        ((eq m '()) n)
+                                        ('t ((sum (cdr m)) (cons (car m) n)))
+  )))) (cons '1 (cons '1 (cons '1 '())))))
+ (quote (1 1 1 1 1 1))
+)
+
+; good
+(((label add3 (lambda (f) (lambda (n) (f n))))
+  ((label sum (lambda (m) (lambda (n) (
+    cond
+    ((eq m '()) n)
+    ('t ((sum (cdr m)) (cons (car m) n)))
+  )))) (cons '1 (cons '1 (cons '1 '())))))
+ (cons '1 (cons '1 '()))
+)
+
+(((label sum (lambda (m) (lambda (n) (
+                                       cond
+                                       ((eq m '()) n)
+                                       ('t ((sum (cdr m)) (cons (car m) n)))
+)))) (quote (1 1 1))) (quote (1 1)))
+
+; good
+(((label map (lambda (f) (lambda (list) (
+  cond
+  ((eq list '()) '())
+  ('t (cons (f (car list)) ((map f) (cdr list))))
+)))) (lambda (c) (cons c (cons c (cons c '()))))) (quote (1 1)))
+
+(((label map (lambda (f) (lambda (list) (
+                                          cond
+                                          ((eq list '()) '())
+                                          ('t (cons (f (car list)) ((map f) (cdr list))))
+)))) (lambda (c) (cons c (cons c (cons c '()))) )) (quote (1 1)))
+
+
+(((label sum (lambda (m) (lambda (n) (
+  cond
+  ((eq m '()) n)
+  ('t ((sum (cdr m)) (cons (car m) n)))
+)))) (cons '1 (cons '1 (cons '1 '())))) (cons '1 (cons '1 '())))
+
+(((label sum (lambda (m) (lambda (n) (
+  cond
+  ((eq m '()) n)
+  ('t ((sum (cdr m)) (cons (car m) n)))
+)))) (cons '1 (cons '1 (cons '1 '())))) (cons '1 (cons '1 '())))
+
+
 
 
 (let (0 (lambda (f) (lambda (x) x))) (
