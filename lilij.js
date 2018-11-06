@@ -92,19 +92,10 @@ let eq = (x, y) => {
 };
 
 let car = (exp) => {
-    if (exp === undefined) {
-        console.log("aaaaa");
-    }
     return exp[0];
 };
 
 let cdr = (exp) => {
-    if (exp === undefined) {
-        console.log("bbbbb");
-    }
-    if (exp.length === 0) {
-        console.log("ccccccccccccc");
-    }
     return exp.slice(1);
 };
 
@@ -130,20 +121,9 @@ let cons = (x, list) => {
     return list1;
 };
 
-let cons1 = (a, list) => {
-    if (!!list && list.length > 1) {
-        return cons(a, list);
-    } else {
-        return a;
-    }
-};
-
 let evcon = (pes, env) => {
     for (let i = 0; i < pes.length; i++) {
         if (interp(pes[i][0], env) === "t") {
-            if (interp(pes[i][1], env) === "error") {
-                console.log("bbbbbbbbbbbbbbbbbbbbbbb");
-            }
             return interp(pes[i][1], env);
         }
     }
@@ -214,7 +194,6 @@ let quotes = (values) => {
     }
     return res;
 };
-let t = 0;
 
 let interp = (exp, env) => {
     if (atom(exp) === "t") {
@@ -244,9 +223,6 @@ let interp = (exp, env) => {
         // 支持0或多参数版本
         // 需要根据v1的参数列表来处理计算长度
         // 没有处理好参数列表比实际参数多的情况
-        if (eq(car(v1), "closure") != "t") {
-            return v1;
-        }
         let params = evlis(cdr(exp), env);
         let lambda = [];
         let env_ext = caddr(v1);
@@ -258,9 +234,7 @@ let interp = (exp, env) => {
                 env_ext = append(env_ext, pair(cadr(cadr(v1)), v1));
             }
         } else {
-            return v1;
-            // console.error("error");
-            // throw "error";
+            throw "error";
         }
         return callnext(interp(caddr(lambda), append(env_ext, pairs(cadr(lambda), params))), quotes(getparamsleft(cadr(lambda), params)));
     }

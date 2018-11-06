@@ -59,3 +59,9 @@
 ])) (lambda (c) [cons c (cons c (cons c '()))]) (quote (1 1)))
 
 
+;#test
+(((label map (lambda (f) (lambda (list) [
+  cond
+  ((eq list '()) '())
+  ('t (cons (f (car list)) ((map f) (cdr list))))
+]))) (lambda (c) [cons c (cons c (cons c '()))])) (quote (1 1)))
