@@ -51,7 +51,11 @@
 ]))
 (quote
 
-(((lambda (x) (lambda (y) (eq x y))) 'a) 'a)
+(((label sum (lambda (m) (lambda (n) [
+  cond
+  ((eq m '()) n)
+  ('t ((sum (cdr m)) (cons (car m) n)))
+]))) (quote (1 1 1))) (quote (1 1)))
 
 ) '()
 )

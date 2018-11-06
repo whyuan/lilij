@@ -244,6 +244,9 @@ let interp = (exp, env) => {
         // 支持0或多参数版本
         // 需要根据v1的参数列表来处理计算长度
         // 没有处理好参数列表比实际参数多的情况
+        if (eq(car(v1), "closure") != "t") {
+            return v1;
+        }
         let params = evlis(cdr(exp), env);
         let lambda = [];
         let env_ext = caddr(v1);
