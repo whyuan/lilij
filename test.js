@@ -1,19 +1,16 @@
-let assert = (expr, res) => {
-	if (r2(expr) == res) {
-		console.log(expr + " == " + res + " pass.\n");
-	} else {
-		console.log(expr + " == " + res + " fail, expect " + res + " but " + r2(expr) + ".");
-	}
-}
+let fs = require('fs');
+let lilij = require('./lilij.js').lilij;
 
-assert("(+ 1 2)", 3);
-assert("(* 2 3)", 6);
-assert("(* 2 (+ 3 4))", 14);
-assert("(* (+ 1 2) (+ 3 4))", 21);
-assert("((lambda (x) (* 2 x)) 3)", 6);
-assert(`
-	(let ([x 2])
-		(let ([f (lambda (y) (* x y))])
-			(let ([x 4])
-				(f 3))))`, 6);
-assert("((lambda (x) (+ (let ([x 3]) x) x)) 2)", 5);
+let data = fs.readFileSync('test.scm', 'utf-8');
+let tests = data.split(/;#test/gi);
+for (let i in tests) {
+    let test = tests[i].replace(/\s*\n/gi, '');
+    if (!!test) {
+        try {
+            console.log('>> ' + test);
+            console.log(lilij(test));
+        } catch (e) {
+            console.error(e);
+        }
+    }
+}

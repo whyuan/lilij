@@ -193,26 +193,6 @@ let lilij = (exp) => {
     return JSON.stringify(res).replace(/\"/gi, "").replace(/\[/gi, "(").replace(/\]/gi, ")").replace(/,/gi, " ");
 };
 
-console.log(lilij("(eq 'abc 'abc)"));
-console.log(lilij("(atom 'abc)"));
-console.log(lilij("(atom '((cons a (b))))"));
-console.log(lilij("(cons 'a (cons 'b '()))"));
-console.log(lilij("(car (cons 'a (cons 'b '())))"));
-console.log(lilij("((lambda (x y) (eq x y)) 'a 'b)"));
-console.log(lilij("((lambda (x y) (eq x y)) 'a 'a)"));
-console.log(lilij("((lambda (x y) (eq x y)) '() '())"));
-console.log(lilij("((lambda (x y) (eq x y)) '() '())"));
-console.log(lilij(`
-(((label sum (lambda (m) (lambda (n) (
-  cond
-  ((eq m '()) n)
-  ('t ((sum (cdr m)) (cons (car m) n)))
-)))) (quote (1 1 1))) (quote (1 1)))
-`));
-console.log(lilij(`
-(((label map (lambda (f) (lambda (list) (
-  cond
-  ((eq list '()) '())
-  ('t (cons (f (car list)) ((map f) (cdr list))))
-)))) (lambda (c) (cons c (cons c (cons c '()))))) (quote (1 1)))
-`));
+module.exports = {
+    lilij
+};
