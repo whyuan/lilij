@@ -21,6 +21,8 @@ let parseToTokens = (exp) => {
         .replace(/'(\w+)/gi, ($0, $1)=>"(quote "+$1+")")
         .replace(/;.*/g, "")
         .replace(/\s+/gi, ",")
+        .replace(/\[/gi, ",(,")
+        .replace(/]/gi, ",),")
         .replace(/\(/gi, ",(,")
         .replace(/\)/gi, ",),")
         .replace(/,+/gi, ",")
@@ -76,12 +78,13 @@ let eq = (x, y) => {
         } else if (x.length !== y.length) {
             return [];
         } else {
-            for (let i = 0; i < x.length; i++) {
-                if (eq(x[i], y[i]) !== "t") {
-                    return [];
-                }
-            }
-            return "t";
+            return [];
+            // for (let i = 0; i < x.length; i++) {
+            //     if (eq(x[i], y[i]) !== "t") {
+            //         return [];
+            //     }
+            // }
+            // return "t";
         }
     } else {
         return [];
@@ -89,15 +92,28 @@ let eq = (x, y) => {
 };
 
 let car = (exp) => {
+    if (exp === undefined) {
+        console.log("aaaaa");
+    }
     return exp[0];
 };
 
 let cdr = (exp) => {
+    if (exp === undefined) {
+        console.log("bbbbb");
+    }
+    if (exp.length === 0) {
+        console.log("ccccccccccccc");
+    }
     return exp.slice(1);
 };
 
 let cadr = (exp) => {
     return car(cdr(exp));
+};
+
+let cddr = (exp) => {
+    return cdr(cdr(exp));
 };
 
 let caddr = (exp) => {
@@ -114,9 +130,20 @@ let cons = (x, list) => {
     return list1;
 };
 
+let cons1 = (a, list) => {
+    if (!!list && list.length > 1) {
+        return cons(a, list);
+    } else {
+        return a;
+    }
+};
+
 let evcon = (pes, env) => {
     for (let i = 0; i < pes.length; i++) {
         if (interp(pes[i][0], env) === "t") {
+            if (interp(pes[i][1], env) === "error") {
+                console.log("bbbbbbbbbbbbbbbbbbbbbbb");
+            }
             return interp(pes[i][1], env);
         }
     }
@@ -147,6 +174,48 @@ let closure = (exp, env) => {
     return ["closure", exp, env];
 };
 
+let callnext = (a, params) => {
+    // a为closure或普通table
+    if (params.length > 0) {
+        if (eq(car(a), "closure") === "t") {
+            return interp(cons(cadr(a), params), caddr(a));
+        } else {
+            return a;
+        }
+    } else {
+        return a;
+    }
+};
+
+let evlis = (params, env) => {
+    let res = [];
+    for (let i = 0; i < params.length; i++) {
+        res.push(interp(params[i], env));
+    }
+    return res;
+};
+
+let pairs = (keys, values) => {
+    let res = {};
+    for (let i in keys) {
+        res[keys[i]] = values[i];
+    }
+    return res;
+};
+
+let getparamsleft = (keys, values) => {
+    return values.slice(keys.length);
+};
+
+let quotes = (values) => {
+    let res = [];
+    for (let i in values) {
+        res.push(cons("quote", cons(values[i], [])));
+    }
+    return res;
+};
+let t = 0;
+
 let interp = (exp, env) => {
     if (atom(exp) === "t") {
         return assoc(exp, env);
@@ -172,25 +241,36 @@ let interp = (exp, env) => {
         return closure(caddr(exp), append(env, pair(cadr(exp), closure(exp, env))));
     } else {
         let v1 = interp(car(exp), env);
-        let v2 = interp(cadr(exp), env);
+        // 支持0或多参数版本
+        // 需要根据v1的参数列表来处理计算长度
+        // 没有处理好参数列表比实际参数多的情况
+        let params = evlis(cdr(exp), env);
+        let lambda = [];
+        let env_ext = caddr(v1);
         if (eq(car(v1), "closure") === "t") {
             if (eq(car(cadr(v1)), "lambda") === "t") {
-                return interp(caddr(cadr(v1)), append(caddr(v1), pair(car(cadr(cadr(v1))), v2)));
+                lambda = cadr(v1);
             } else {
-                return interp(caddr(caddr(cadr(v1))), append(append(caddr(v1),
-                    pair(cadr(cadr(v1)), v1)),
-                    pair(car(cadr(caddr(cadr(v1)))), v2)));
+                lambda = caddr(cadr(v1));
+                env_ext = append(env_ext, pair(cadr(cadr(v1)), v1));
             }
         } else {
-            console.error("error");
+            return v1;
+            // console.error("error");
+            // throw "error";
         }
+        return callnext(interp(caddr(lambda), append(env_ext, pairs(cadr(lambda), params))), quotes(getparamsleft(cadr(lambda), params)));
     }
 };
 
 let lilij = (exp) => {
     let exp1 = parse(exp);
     let res = interp(exp1, {});
-    return JSON.stringify(res).replace(/\"/gi, "").replace(/\[/gi, "(").replace(/\]/gi, ")").replace(/,/gi, " ");
+    if (!!res) {
+        return JSON.stringify(res).replace(/\"/gi, "").replace(/\[/gi, "(").replace(/\]/gi, ")").replace(/,/gi, " ");
+    } else {
+        return "[error]"
+    }
 };
 
 module.exports = {
