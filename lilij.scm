@@ -1,6 +1,4 @@
-;#test
-(
-(label eval. (lambda (exp env) [
+((label eval. (lambda (exp env) [
 (lambda (caar. cadr. cadar. caddr. closure. pair.) [
 (lambda (evcon. assoc.) [
   cond
@@ -51,13 +49,6 @@
 ]))
 (quote
 
-(((label map (lambda (f) (lambda (list) [
-  cond
-  ((eq list '()) '())
-  ('t (cons (f (car list)) ((map f) (cdr list))))
-]))) (lambda (c) [cons c (cons c (cons c '()))])) (quote (1 1)))
+;#exp
 
-) '()
-)
-
-
+) '())
