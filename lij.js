@@ -19,7 +19,7 @@ let parseToTokens = (exp) => {
     let tokens = exp.replace(/'\(\)/gi, "(quote ())")
         // .replace(/'\(/gi, "(quote ")
         .replace(/'(\w+)/gi, ($0, $1)=>"(quote "+$1+")")
-        .replace(/;.*/g, "")
+        .replace(/;.*\n/g, "")
         .replace(/\s+/gi, ",")
         .replace(/\[/gi, ",(,")
         .replace(/]/gi, ",),")
@@ -240,16 +240,20 @@ let interp = (exp, env) => {
     }
 };
 
-let lilij = (exp) => {
+let lij = (exp, need_serialize) => {
     let exp1 = parse(exp);
     let res = interp(exp1, {});
     if (!!res) {
         return JSON.stringify(res).replace(/\"/gi, "").replace(/\[/gi, "(").replace(/\]/gi, ")").replace(/,/gi, " ");
+        // if ((need_serialize === undefined || need_serialize === true)) {
+        // } else {
+        //     return res;
+        // }
     } else {
         return "[error]"
     }
 };
 
 module.exports = {
-    lilij
+    lij: lij
 };
