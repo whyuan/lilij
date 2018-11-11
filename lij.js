@@ -66,7 +66,7 @@ let parse = (exp) => {
 };
 
 let atom = (exp) => {
-    return (typeof exp === "string") ? "t" : [];
+    return ((typeof exp === "string") || (exp instanceof Array && exp.length == 0)) ? "t" : [];
 };
 
 let eq = (x, y) => {

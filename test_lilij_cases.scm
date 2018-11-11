@@ -48,3 +48,13 @@
   ('t (cons (f (car list)) ((map f) (cdr list))))
 ]))) (lambda (c) [cons c (cons c (cons c '()))])) (quote (1 1)))
 
+;#test
+((label our-member (lambda (obj list) [
+  cond
+  ((eq list '()) '())
+  ((eq (car list) obj) list)
+  ('t (our-member obj (cdr list)))
+]))
+ (quote b)
+(quote (a b c))
+)

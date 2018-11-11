@@ -65,3 +65,46 @@
   ((eq list '()) '())
   ('t (cons (f (car list)) ((map f) (cdr list))))
 ]))) (lambda (c) [cons c (cons c (cons c '()))])) (quote (1 1)))
+
+;#test
+((label our-member (lambda (obj list) [
+  cond
+  ((eq list '()) '())
+  ((eq (car list) obj) list)
+  ('t (our-member obj (cdr list)))
+]))
+'b
+(quote (a b c))
+)
+
+;#test
+(
+(lambda (f list) (f 'a))
+((lambda (list)
+  (lambda (x) (cons x list))
+) (quote (b)))
+(quote (c))
+)
+
+;#test
+((label f (lambda (x) (
+  cond
+  ((eq x '()) x)
+  ('t (cons 1 ))
+))) '() (quote (1 1 1 1 1 1 1 1 1 1)))
+
+;#test
+((label atob (lambda (z) (
+  cond
+  ((atom z) (
+    cond
+    ((eq z 'a) 'b)
+    ('t z)
+  ))
+  ('t (
+    cons
+    (atob (car z))
+    (atob (cdr z))
+  ))
+))) (quote ((a) b c)))
+
