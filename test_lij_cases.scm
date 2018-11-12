@@ -1,7 +1,6 @@
 ;#test
 '1
 
-
 ; (quote (((lambda (x) (lambda (y) (eq x y))) 'a) 'a)) '()
 
 ;#test
@@ -94,17 +93,32 @@
 ))) '() (quote (1 1 1 1 1 1 1 1 1 1)))
 
 ;#test
+((lambda (cons. car. cdr.) 
 ((label atob (lambda (z) (
   cond
-  ((atom z) (
+  ((atom z) (cond ((eq z 'a) 'b) ('t z)))
+  ('t (cons. (atob (car. z)) (atob (cdr. z))))
+))) (cons. 'a (cons. 'b (cons. 'c '())))))
+(lambda (x y) (lambda (m) (
+  cond
+  ((eq m '0) x)
+  ((eq m '1) y)
+  ('t 'error)
+)))
+(lambda (z) (z '0))
+(lambda (z) (z '1)))
+
+;#test
+
+;#test
+(((lambda (Y) (
+  Y (lambda (atob) (lambda (z) (
     cond
-    ((eq z 'a) 'b)
-    ('t z)
-  ))
-  ('t (
-    cons
-    (atob (car z))
-    (atob (cdr z))
-  ))
-))) (quote ((a) b c)))
+    ((atom z) (cond ((eq z 'a) 'b) ('t z)))
+    ('t (cons (atob (car z)) (atob (cdr z))))
+  )))
+)) (lambda (f) 
+    ((lambda (x) [f (lambda (y) ((x x) y))])
+      (lambda (x) [f (lambda (y) ((x x) y))]))))
+(quote (a b c (a b c))))
 
